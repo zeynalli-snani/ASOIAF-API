@@ -4,6 +4,10 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { createClient } = require('redis');
 
+const authRoutes = require('./src/routes/authRoutes');
+const characterRoutes = require('./src/routes/characterRoutes');
+const userRoutes = require('./src/routes/userRoutes');
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -41,6 +45,10 @@ redisClient.connect().catch(() => {
 });
 
 module.exports = { app, redisClient };
+
+app.use('/api/auth', authRoutes);
+app.use('/api/characters', characterRoutes);
+app.use('/api/users', userRoutes);
 
 app.get('/', (req, res) => {
   res.send('ASOIAF API Backend is up and running securely.');
