@@ -10,6 +10,8 @@ const swaggerDocument = require('./src/swagger.json');
 const authRoutes = require('./src/routes/authRoutes');
 const characterRoutes = require('./src/routes/characterRoutes');
 const userRoutes = require('./src/routes/userRoutes');
+const passport = require('passport');
+require('./src/config/passport');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,6 +19,7 @@ const PORT = process.env.PORT || 3000;
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use(passport.initialize());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 global.isRedisReady = false; 
