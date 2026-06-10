@@ -4,6 +4,9 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { createClient } = require('redis');
 
+const swaggerUi = require('swagger-ui-express');
+const swaggerDocument = require('./src/swagger.json');
+
 const authRoutes = require('./src/routes/authRoutes');
 const characterRoutes = require('./src/routes/characterRoutes');
 const userRoutes = require('./src/routes/userRoutes');
@@ -14,6 +17,7 @@ const PORT = process.env.PORT || 3000;
 app.use(helmet());
 app.use(cors());
 app.use(express.json());
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 global.isRedisReady = false; 
 

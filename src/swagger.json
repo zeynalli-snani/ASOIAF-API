@@ -1,0 +1,232 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "A Song of Ice and Fire API",
+    "version": "1.0.0",
+    "description": "Complete API documentation for the ASOIAF universe, including Authentication, Character Management, and User Profiles.",
+    "contact": {
+      "name": "Narmin Azizova"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:3000",
+      "description": "Local Development Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "UserSchema": {
+        "type": "object",
+        "required": ["username", "password"],
+        "properties": {
+          "username": { "type": "string", "example": "stark_admin" },
+          "password": { "type": "string", "example": "winteriscoming123" }
+        }
+      },
+      "CharacterSchema": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "example": "Elara Stark" },
+          "gender": { "type": "string", "example": "Female" },
+          "culture": { "type": "string", "example": "Northmen" },
+          "born": { "type": "string", "example": "In 280 AC" },
+          "died": { "type": "string", "example": "" },
+          "titles": { 
+            "type": "array", 
+            "items": { "type": "string" },
+            "example": ["Lady of Winterfell"]
+          },
+          "aliases": { 
+            "type": "array", 
+            "items": { "type": "string" },
+            "example": ["The Ice Wolf"]
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserSchema" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "User registered successfully" },
+          "400": { "description": "Username already taken or missing fields" }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "summary": "Log in to get an access token",
+        "tags": ["Authentication"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserSchema" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Login successful, returns JWT token" },
+          "401": { "description": "Invalid credentials" }
+        }
+      }
+    },
+    "/api/characters": {
+      "get": {
+        "summary": "Get all characters (Paginated)",
+        "tags": ["Characters"],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "page",
+            "schema": { "type": "integer", "default": 1 },
+            "description": "Page number (Max 20 elements per page)"
+          }
+        ],
+        "responses": {
+          "200": { "description": "A list of characters from Cache or Database" }
+        }
+      },
+      "post": {
+        "summary": "Create a new character",
+        "tags": ["Characters"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CharacterSchema" }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Character created successfully" },
+          "401": { "description": "Unauthorized - Missing or invalid token" }
+        }
+      }
+    },
+    "/api/characters/search": {
+      "get": {
+        "summary": "Search for a character by name",
+        "tags": ["Characters"],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "name",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Partial or full name (Case-insensitive)"
+          }
+        ],
+        "responses": {
+          "200": { "description": "List of matching characters" },
+          "400": { "description": "No search query provided" },
+          "404": { "description": "No characters found" }
+        }
+      }
+    },
+    "/api/characters/{id}": {
+      "get": {
+        "summary": "Get a specific character by ID",
+        "tags": ["Characters"],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" },
+            "description": "Character ID"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Character details" },
+          "404": { "description": "Character not found" }
+        }
+      },
+      "put": {
+        "summary": "Update an existing character",
+        "tags": ["Characters"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/CharacterSchema" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Character updated successfully" },
+          "401": { "description": "Unauthorized" }
+        }
+      },
+      "delete": {
+        "summary": "Delete a character",
+        "tags": ["Characters"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": { "type": "integer" }
+          }
+        ],
+        "responses": {
+          "200": { "description": "Character destroyed successfully" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    },
+    "/api/users/me": {
+      "get": {
+        "summary": "Get current logged-in user profile",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "User profile data" },
+          "401": { "description": "Unauthorized" },
+          "404": { "description": "User not found" }
+        }
+      }
+    },
+    "/api/users/account": {
+      "delete": {
+        "summary": "Delete the current logged-in user's account",
+        "tags": ["Users"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Account deleted successfully" },
+          "401": { "description": "Unauthorized" }
+        }
+      }
+    }
+  }
+}
