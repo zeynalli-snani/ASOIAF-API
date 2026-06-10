@@ -4,6 +4,7 @@ const characterController = require('../controllers/characterController');
 const auth = require('../middleware/auth'); // Import the JWT gatekeeper
 
 router.get('/', characterController.getAllCharacters);
+router.get('/search', characterController.searchCharactersByName);
 router.get('/:id', characterController.getCharacterById);
 
 router.post('/', auth, characterController.createCharacter);

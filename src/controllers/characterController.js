@@ -58,6 +58,36 @@ exports.getCharacterById = async (req, res) => {
   }
 };
 
+
+exports.searchCharactersByName = async (req, res) => {
+  try {
+    const { name } = req.query; 
+
+    if (!name) {
+      return res.status(400).json({ error: 'Please provide a name to search for.' });
+    }
+
+    const characters = await prisma.character.findMany({
+      where: {
+        name: {
+          contains: name,       // looks for partial matches too (thanks prisma)
+          mode: 'insensitive',  
+        },
+      },
+      take: 20, 
+    });
+
+    if (characters.length === 0) {
+      return res.status(404).json({ message: 'No characters found matching that name.' });
+    }
+
+    res.status(200).json(characters);
+  } catch (error) {
+    console.error('Error searching characters by name:', error);
+    res.status(500).json({ error: 'Internal server error during search' });
+  }
+};
+
 exports.createCharacter = async (req, res) => {
   try {
     const newCharacter = await prisma.character.create({
