@@ -22,13 +22,14 @@ app.use(express.json());
 app.use(passport.initialize());
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+// Global Redis Settings
 global.isRedisReady = false; 
 
-const redisClient = createClient({ 
+// Attach directly to global to bypass circular dependency import issues
+global.redisClient = createClient({ 
   url: process.env.REDIS_URL,
   socket: {
     reconnectStrategy: (retries) => {
-      // we try to reconnect 3 times, if its unsuccessfull we give up and use the DB
       if (retries > 3) {
         console.log('Redis retries exhausted. Running API without cache.');
         return new Error('Redis down');
@@ -38,20 +39,21 @@ const redisClient = createClient({
   }
 });
 
-redisClient.on('error', (err) => {
+global.redisClient.on('error', (err) => {
   global.isRedisReady = false;
 });
 
-redisClient.on('ready', () => {
+global.redisClient.on('ready', () => {
   console.log('Connected to Redis Cache');
   global.isRedisReady = true;
 });
 
-redisClient.connect().catch(() => {
+global.redisClient.connect().catch(() => {
   console.log('Initial Redis connection failed. Falling back to primary database.');
 });
 
-module.exports = { app, redisClient };
+// No need to export redisClient anymore
+module.exports = { app };
 
 app.use('/api/auth', authRoutes);
 app.use('/api/characters', characterRoutes);

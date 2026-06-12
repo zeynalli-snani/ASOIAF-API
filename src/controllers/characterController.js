@@ -1,6 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const { redisClient } = require('../../server');
 
 exports.getAllCharacters = async (req, res) => {
   try {
@@ -9,9 +8,9 @@ exports.getAllCharacters = async (req, res) => {
     const skip = (page - 1) * limit;
     const cacheKey = `characters:page:${page}`;
 
-    // we try fetching from redis
+    // Try fetching from redis
     if (global.isRedisReady) {
-      const cachedData = await redisClient.get(cacheKey);
+      const cachedData = await global.redisClient.get(cacheKey);
       if (cachedData) {
         return res.status(200).json({
           source: 'cache',
@@ -21,16 +20,16 @@ exports.getAllCharacters = async (req, res) => {
       }
     }
 
-    // if no cache fetch from postgre
+    // Fallback to postgres
     const characters = await prisma.character.findMany({
       skip: skip,
       take: limit,
       orderBy: { id: 'asc' }
     });
 
-    // save data to redis for 1 hour 
+    // Save data to redis for 1 hour 
     if (global.isRedisReady && characters.length > 0) {
-      await redisClient.setEx(cacheKey, 3600, JSON.stringify(characters));
+      await global.redisClient.setEx(cacheKey, 3600, JSON.stringify(characters));
     }
 
     res.status(200).json({
@@ -58,7 +57,6 @@ exports.getCharacterById = async (req, res) => {
   }
 };
 
-
 exports.searchCharactersByName = async (req, res) => {
   try {
     const { name } = req.query; 
@@ -70,7 +68,7 @@ exports.searchCharactersByName = async (req, res) => {
     const characters = await prisma.character.findMany({
       where: {
         name: {
-          contains: name,       // looks for partial matches too (thanks prisma)
+          contains: name,
           mode: 'insensitive',  
         },
       },
@@ -94,8 +92,8 @@ exports.createCharacter = async (req, res) => {
       data: req.body
     });
 
-    // we should invalidate cache as the data has changed
-    if (global.isRedisReady) await redisClient.flushDb(); 
+    // Invalidate cache safely using the global instance
+    if (global.isRedisReady) await global.redisClient.flushDb(); 
 
     res.status(201).json(newCharacter);
   } catch (error) {
@@ -111,7 +109,7 @@ exports.updateCharacter = async (req, res) => {
       data: req.body
     });
 
-    if (global.isRedisReady) await redisClient.flushDb();
+    if (global.isRedisReady) await global.redisClient.flushDb();
 
     res.status(200).json(updatedCharacter);
   } catch (error) {
@@ -124,7 +122,7 @@ exports.destroyCharacter = async (req, res) => {
     const id = parseInt(req.params.id);
     await prisma.character.delete({ where: { id } });
 
-    if (global.isRedisReady) await redisClient.flushDb();
+    if (global.isRedisReady) await global.redisClient.flushDb();
 
     res.status(200).json({ message: 'Character destroyed successfully' });
   } catch (error) {
